@@ -1,0 +1,8 @@
+src/nimcache
+*.inc
+*.pal
+linkfile
+*.pic
+*.as
+*.sym
+*.sfc
