@@ -89,12 +89,4 @@ $(NIMOUT): $(NIMSRC_PATH)
 			' "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; \
 		done; \
 	fi
-	@echo "Renaming duplicate labels in Nim-generated C files..."
-	@for f in $(NIMCACHE)/*.c; do \
-		perl -i -pe ' \
-			BEGIN { $$func_id = 0; } \
-			if (/^(?:N_LIB_PRIVATE|N_NIMCALL|static\s).*\(/) { $$func_id++; } \
-			s/\bLA(\d+)(_?)\b/LA$${func_id}_$$1$$2/g; \
-		' "$$f"; \
-	done
 

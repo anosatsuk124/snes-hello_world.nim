@@ -9,6 +9,7 @@ This is a simple "Hello World" example for the Super Nintendo Entertainment Syst
 - `Nim` programming language installed.
 
 - `PVSNESLIB` library for SNES development.
+  - You need to replace `tcc` compiler with my patched version <https://github.com/anosatsuk124/tcc>.
 
 ## Building the Project
 
