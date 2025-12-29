@@ -3,6 +3,6 @@
 #endif
 
 #include "nimbase_tcc_helper.h"
-#include "nimcache/hello_world_nim.h"
+#include "nimcache/hello_world.h"
 
 int main(void) { return nim_main(); }

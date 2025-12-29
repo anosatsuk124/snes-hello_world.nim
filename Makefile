@@ -1,37 +1,41 @@
+# Environment check
 ifeq ($(strip $(PVSNESLIB_HOME)),)
 $(error "Please create an environment variable PVSNESLIB_HOME by following this guide: https://github.com/alekmaul/pvsneslib/wiki/Installation")
 endif
 
-include ${PVSNESLIB_HOME}/devkitsnes/snes_rules
-
-CFLAGS += -I$(CURDIR)/helper/cinclude
-NIM := nim
-
-#---------------------------------------------------------------------------------
-# Nim configuration
-NIMCACHE := $(CURDIR)/src/nimcache
-NIMSRC := hello_world.nim
-NIMSRC_PATH := $(CURDIR)/src/$(NIMSRC)
-NIMHEADER := hello_world_nim.h
-NIMOUT := $(NIMCACHE)/$(NIMHEADER)
-
-# Nim-generated C files - add to OFILES manually since they don't exist at make startup
-NIMCFILES := $(NIMCACHE)/@m$(NIMSRC).c $(NIMCACHE)/@psystem.nim.c
-NIMOFILES := $(NIMCFILES:.c=.obj)
-export OFILES := $(OFILES) $(NIMOFILES)
-
-.PHONY: bitmaps all
-
-#---------------------------------------------------------------------------------
-# ROMNAME is used in snes_rules file
+#-------------------------------------------------------------------------------
+# Configuration
+#-------------------------------------------------------------------------------
 export ROMNAME := hello_world_nim
 
-all: bitmaps $(NIMOUT) $(NIMOFILES) $(ROMNAME).sfc
+NIM := nim
+NIMLIB_NAME := hello_world
+NIMCACHE := $(CURDIR)/src/nimcache
+NIMSRC := $(NIMLIB_NAME).nim
+NIMSRC_PATH := $(CURDIR)/src/$(NIMSRC)
+NIMHEADER := $(NIMLIB_NAME).h
+NIMOUT := $(NIMCACHE)/$(NIMHEADER)
 
-# Ensure nimcache C files depend on NIMOUT (Nim compilation)
-$(NIMCFILES): $(NIMOUT)
+CFLAGS += -I$(CURDIR)/helper/cinclude
 
-# Explicit rules for nimcache files (@ in filename needs special handling)
+#-------------------------------------------------------------------------------
+# Include PVSNESLIB rules
+#-------------------------------------------------------------------------------
+include ${PVSNESLIB_HOME}/devkitsnes/snes_rules
+
+#===============================================================================
+# Build Rules
+#===============================================================================
+
+# Nim compilation
+$(NIMCACHE)/%.c: $(NIMOUT)
+
+$(NIMOUT): $(NIMSRC_PATH)
+	@echo Compiling Nim ... $<
+	$(NIM) c -d:release --nimcache:$(NIMCACHE) --header:$(NIMHEADER) $<
+	@$(CURDIR)/scripts/patch_nimcache.sh $(NIMCACHE)
+
+# Nimcache-specific rules (handles @ in filenames)
 $(NIMCACHE)/%.ps: $(NIMCACHE)/%.c
 	@echo Compiling to .ps ... $(notdir $<)
 	$(CC) $(CFLAGS) -Wall -c $< -o $@
@@ -48,45 +52,25 @@ $(NIMCACHE)/%.obj: $(NIMCACHE)/%.asm
 	@echo "Building with -x flag: $(AS) -s -x -o $@ $<"
 	$(AS) -d -s -x -o $@ $<
 
-cleanNim:
-	@echo Cleaning Nim cache ...
-	@rm -rf src/nimcache
-
-clean: cleanBuildRes cleanRom cleanGfx cleanNim
-
-#---------------------------------------------------------------------------------
+# Graphics
 pvsneslibfont.pic: pvsneslibfont.png
 	@echo convert font with no tile reduction ... $(notdir $@)
 	$(GFXCONV) -s 8 -o 16 -u 16 -p -e 0 -i $<
 
-bitmaps : pvsneslibfont.pic
+bitmaps: pvsneslibfont.pic
 
-$(NIMOUT): $(NIMSRC_PATH)
-	@echo Compiling Nim ... $<
-	$(NIM) c -d:release --nimcache:$(NIMCACHE) --header:$(NIMHEADER) $<
-	@FILES=$$(rg -l "NIM_INTBITS 64" "$(CURDIR)/src/nimcache" 2>/dev/null); \
-	if [ -n "$$FILES" ]; then \
-		for f in $$FILES; do \
-			perl -pi -e 's/#define NIM_INTBITS 64/#define NIM_INTBITS 16/' "$$f"; \
-		done; \
-	fi
-	@FILES=$$(rg -l "snes/.*\\.h" "$(CURDIR)/src/nimcache" 2>/dev/null); \
-	if [ -n "$$FILES" ]; then \
-		for f in $$FILES; do \
-			awk ' \
-			{ print $$0; } \
-			/#include "nimbase.h"/ { \
-				print "#ifdef bool"; \
-				print "#undef bool"; \
-				print "#endif"; \
-				print "#ifdef true"; \
-				print "#undef true"; \
-				print "#endif"; \
-				print "#ifdef false"; \
-				print "#undef false"; \
-				print "#endif"; \
-			} \
-			' "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; \
-		done; \
-	fi
+#===============================================================================
+# Targets
+#===============================================================================
 
+.PHONY: all bitmaps clean cleanNim
+
+# Two-stage build: 1) compile Nim, 2) recursive make to detect nimcache files
+all: bitmaps $(NIMOUT)
+	$(MAKE) $(ROMNAME).sfc
+
+cleanNim:
+	@echo Cleaning Nim cache ...
+	@rm -rf $(NIMCACHE)
+
+clean: cleanBuildRes cleanRom cleanGfx cleanNim
