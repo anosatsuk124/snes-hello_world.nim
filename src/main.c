@@ -5,4 +5,4 @@
 #include "nimbase_tcc_helper.h"
 #include "nimcache/hello_world_nim.h"
 
-int main(void) { return main(); }
+int main(void) { return nim_main(); }

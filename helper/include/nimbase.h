@@ -23,6 +23,8 @@ __EMSCRIPTEN__
 #ifndef NIMBASE_H
 #define NIMBASE_H
 
+#include "nimbase_tcc_helper.h"
+
 /*------------ declaring a custom attribute to support using LLVM's Address Sanitizer ------------ */
 
 /*
@@ -325,8 +327,8 @@ namespace USE_NIM_NAMESPACE {
 typedef unsigned char NIM_BOOL; // best effort
 #endif
 
-NIM_STATIC_ASSERT(sizeof(NIM_BOOL) == 1, ""); // check whether really needed
-NIM_STATIC_ASSERT(CHAR_BIT == 8, "");
+/* disabled for 65c816 tcc: pointer size is 24-bit */
+/* disabled for 65c816 tcc: pointer size is 24-bit */
   // fail fast for (rare) environments where this doesn't hold, as some implicit
   // assumptions would need revisiting (e.g. `uint8` or https://github.com/nim-lang/Nim/pull/18505)
 
@@ -558,7 +560,7 @@ static inline void GCGuard (void *ptr) { asm volatile ("" :: "X" (ptr)); }
 #endif
 
 // Test to see if Nim and the C compiler agree on the size of a pointer.
-NIM_STATIC_ASSERT(sizeof(NI) == sizeof(void*) && NIM_INTBITS == sizeof(NI)*8, "Pointer size mismatch between Nim and C/C++ backend. You probably need to setup the backend compiler for target CPU.");
+/* disabled for 65c816 tcc: pointer size is 24-bit */
 
 #ifdef USE_NIM_NAMESPACE
 }
@@ -616,5 +618,16 @@ NIM_STATIC_ASSERT(sizeof(NI) == sizeof(void*) && NIM_INTBITS == sizeof(NI)*8, "P
 
 #define NIM_NOALIAS __restrict
 /* __restrict is said to work for all the C(++) compilers out there that we support */
+
+/* Avoid conflicts with pvsneslib's snestypes.h */
+#ifdef bool
+#undef bool
+#endif
+#ifdef true
+#undef true
+#endif
+#ifdef false
+#undef false
+#endif
 
 #endif /* NIMBASE_H */

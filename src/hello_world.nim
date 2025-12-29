@@ -40,7 +40,7 @@ int main(void)
 var tilfont* {.importc: "tilfont".}: u8
 var palfont* {.importc: "palfont".}: u8
 
-proc main*(): cint {.exportc, cdecl.} =
+proc nim_main*(): cint {.exportc, cdecl.} =
   consoleSetTextMapPtr(0x6800)
   consoleSetTextGfxPtr(0x3000)
   consoleSetTextOffset(0x0100)

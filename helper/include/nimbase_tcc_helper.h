@@ -7,6 +7,19 @@
 #define __INT64_TYPE__ signed long int
 #define __UINT64_TYPE__ unsigned long int
 #endif
+
+/* Minimal pthread stubs for single-threaded SNES builds. */
+typedef int pthread_mutex_t;
+typedef int pthread_mutexattr_t;
+static inline int pthread_mutex_init(pthread_mutex_t* m, const pthread_mutexattr_t* a) {
+  (void)m;
+  (void)a;
+  return 0;
+}
+static inline int pthread_mutex_destroy(pthread_mutex_t* m) {
+  (void)m;
+  return 0;
+}
 #ifndef INT8_MAX
 typedef signed char int8_t;
 #endif
