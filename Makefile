@@ -89,9 +89,6 @@ $(NIMOUT): $(NIMSRC_PATH)
 			' "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; \
 		done; \
 	fi
-	@if [ -f "$(CURDIR)/helper/include/nimbase.h" ]; then \
-		perl -pi -e 's#^NIM_STATIC_ASSERT.*#/* disabled for 65c816 tcc: pointer size is 24-bit */#' "$(CURDIR)/helper/include/nimbase.h"; \
-	fi
 	@echo "Renaming duplicate labels in Nim-generated C files..."
 	@for f in $(NIMCACHE)/*.c; do \
 		perl -i -pe ' \
