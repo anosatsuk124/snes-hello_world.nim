@@ -1,0 +1,10 @@
+`nimbase.h` : based on the distribution version below
+
+```
+$ nim --version
+Nim Compiler Version 2.2.6 [MacOSX: arm64]
+Compiled at 2025-10-31
+Copyright (c) 2006-2025 by Andreas Rumpf
+
+active boot switches: -d:release -d:nimUseLinenoise
+```
