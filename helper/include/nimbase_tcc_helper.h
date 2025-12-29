@@ -3,6 +3,7 @@
 
 /* Provide stdint-like typedefs for the 65c816 tcc toolchain. */
 #if defined(__TINYC__)
+#include <stddef.h>
 #if !defined(__LONG_LONG_MAX__)
 #define __INT64_TYPE__ signed long int
 #define __UINT64_TYPE__ unsigned long int
@@ -20,6 +21,12 @@ static inline int pthread_mutex_destroy(pthread_mutex_t* m) {
   (void)m;
   return 0;
 }
+
+/* Minimal stdio/stdlib shims for Nim runtime helpers. */
+typedef struct FILE FILE;
+size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream);
+int atexit(void (*func)(void));
+extern FILE* stderr;
 #ifndef INT8_MAX
 typedef signed char int8_t;
 #endif

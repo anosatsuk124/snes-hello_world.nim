@@ -14,13 +14,38 @@ NIMSRC := src/hello_world.nim
 NIMHEADER := hello_world_nim.h
 NIMOUT := $(NIMCACHE)/$(NIMHEADER)
 
+# Nim-generated C files - add to OFILES manually since they don't exist at make startup
+NIMCFILES := $(NIMCACHE)/@mhello_world.nim.c $(NIMCACHE)/@psystem.nim.c
+NIMOFILES := $(NIMCFILES:.c=.obj)
+export OFILES := $(OFILES) $(NIMOFILES)
+
 .PHONY: bitmaps all
 
 #---------------------------------------------------------------------------------
 # ROMNAME is used in snes_rules file
 export ROMNAME := hello_world_nim
 
-all: bitmaps $(NIMOUT) $(ROMNAME).sfc
+all: bitmaps $(NIMOUT) $(NIMOFILES) $(ROMNAME).sfc
+
+# Ensure nimcache C files depend on NIMOUT (Nim compilation)
+$(NIMCFILES): $(NIMOUT)
+
+# Explicit rules for nimcache files (@ in filename needs special handling)
+$(NIMCACHE)/%.ps: $(NIMCACHE)/%.c
+	@echo Compiling to .ps ... $(notdir $<)
+	$(CC) $(CFLAGS) -Wall -c $< -o $@
+
+$(NIMCACHE)/%.asm: $(NIMCACHE)/%.ps
+	@echo Assembling ... $(notdir $<)
+	$(OPT) $< >$(NIMCACHE)/$*.asp
+	@echo Moving constants ... $(notdir $<)
+	$(CTF) $(NIMCACHE)/$*.c $(NIMCACHE)/$*.asp $@
+	@rm $(NIMCACHE)/$*.asp
+
+$(NIMCACHE)/%.obj: $(NIMCACHE)/%.asm
+	@echo Doing obj files ...
+	@echo "Building with -x flag: $(AS) -s -x -o $@ $<"
+	$(AS) -d -s -x -o $@ $<
 
 cleanNim:
 	@echo Cleaning Nim cache ...
@@ -38,15 +63,13 @@ bitmaps : pvsneslibfont.pic
 $(NIMOUT): $(NIMSRC)
 	@echo Compiling Nim ... $<
 	$(NIM) c -d:release --nimcache:$(NIMCACHE) --header:$(NIMHEADER) $<
-
-#---------------------------------------------------------------------------------
-%.ps: %.c $(NIMOUT)
-	@echo Compiling to .ps ... $(notdir $<)
 	@FILES=$$(rg -l "NIM_INTBITS 64" "$(CURDIR)/src/nimcache" 2>/dev/null); \
 	if [ -n "$$FILES" ]; then \
-		perl -pi -e 's/#define NIM_INTBITS 64/#define NIM_INTBITS 16/' $$FILES; \
+		for f in $$FILES; do \
+			perl -pi -e 's/#define NIM_INTBITS 64/#define NIM_INTBITS 16/' "$$f"; \
+		done; \
 	fi
-	@FILES=$$(rg -l "#include \\\"nimbase.h\\\"" "$(CURDIR)/src/nimcache" 2>/dev/null); \
+	@FILES=$$(rg -l "snes/.*\\.h" "$(CURDIR)/src/nimcache" 2>/dev/null); \
 	if [ -n "$$FILES" ]; then \
 		for f in $$FILES; do \
 			awk ' \
@@ -68,39 +91,12 @@ $(NIMOUT): $(NIMSRC)
 	@if [ -f "$(CURDIR)/helper/include/nimbase.h" ]; then \
 		perl -pi -e 's#^NIM_STATIC_ASSERT.*#/* disabled for 65c816 tcc: pointer size is 24-bit */#' "$(CURDIR)/helper/include/nimbase.h"; \
 	fi
-ifeq ($(HIROM),1)
-ifeq ($(FASTROM),1)
-	$(CC) $(CFLAGS) -Wall -c $< -H -F -o $@
-else
-	$(CC) $(CFLAGS) -Wall -c $< -H -o $@
-endif
-else
-ifeq ($(FASTROM),1)
-	$(CC) $(CFLAGS) -Wall -c $< -F -o $@
-else
-	$(CC) $(CFLAGS) -Wall -c $< -o $@
-endif
-endif
-
-#---------------------------------------------------------------------------------
-%.sfc: $(OFILES)
-	@echo Creating linkfile ...
-	@echo [objects] > linkfile
-	@for i in $(OFILES); do \
-		echo $$i >> linkfile; \
+	@echo "Renaming duplicate labels in Nim-generated C files..."
+	@for f in $(NIMCACHE)/*.c; do \
+		perl -i -pe ' \
+			BEGIN { $$func_id = 0; } \
+			if (/^(?:N_LIB_PRIVATE|N_NIMCALL|static\s).*\(/) { $$func_id++; } \
+			s/\bLA(\d+)(_?)\b/LA$${func_id}_$$1$$2/g; \
+		' "$$f"; \
 	done
 
-	@for i in $(shell ls $(LIBDIRSOBJSW)); do \
-		echo $(LIBDIRSOBJSW)/$$i >> linkfile; \
-	done
-
-	@echo Linking ... $(notdir $@)
-	@rm -f $(ROMNAME).sym
-	$(LD) -d -s -v -A -c -L ${LIBDIRSOBJS} linkfile $@
-
-	@perl -pi -e 's/://' $(ROMNAME).sym
-	@rg -v ' SECTIONSTART_| SECTIONEND_| RAM_USAGE_SLOT_' $(ROMNAME).sym > $(ROMNAME).sym.tmp && mv $(ROMNAME).sym.tmp $(ROMNAME).sym
-
-	@echo
-	@echo Build finished successfully !
-	@echo

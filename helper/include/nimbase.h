@@ -619,15 +619,4 @@ static inline void GCGuard (void *ptr) { asm volatile ("" :: "X" (ptr)); }
 #define NIM_NOALIAS __restrict
 /* __restrict is said to work for all the C(++) compilers out there that we support */
 
-/* Avoid conflicts with pvsneslib's snestypes.h */
-#ifdef bool
-#undef bool
-#endif
-#ifdef true
-#undef true
-#endif
-#ifdef false
-#undef false
-#endif
-
 #endif /* NIMBASE_H */
