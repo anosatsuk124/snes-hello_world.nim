@@ -4,7 +4,7 @@ endif
 
 include ${PVSNESLIB_HOME}/devkitsnes/snes_rules
 
-CFLAGS += -I$(CURDIR)/helper/include
+CFLAGS += -I$(CURDIR)/helper/cinclude
 NIM := nim
 
 #---------------------------------------------------------------------------------
