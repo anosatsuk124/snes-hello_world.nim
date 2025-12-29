@@ -10,12 +10,13 @@ NIM := nim
 #---------------------------------------------------------------------------------
 # Nim configuration
 NIMCACHE := $(CURDIR)/src/nimcache
-NIMSRC := src/hello_world.nim
+NIMSRC := hello_world.nim
+NIMSRC_PATH := $(CURDIR)/src/$(NIMSRC)
 NIMHEADER := hello_world_nim.h
 NIMOUT := $(NIMCACHE)/$(NIMHEADER)
 
 # Nim-generated C files - add to OFILES manually since they don't exist at make startup
-NIMCFILES := $(NIMCACHE)/@mhello_world.nim.c $(NIMCACHE)/@psystem.nim.c
+NIMCFILES := $(NIMCACHE)/@m$(NIMSRC).c $(NIMCACHE)/@psystem.nim.c
 NIMOFILES := $(NIMCFILES:.c=.obj)
 export OFILES := $(OFILES) $(NIMOFILES)
 
@@ -60,7 +61,7 @@ pvsneslibfont.pic: pvsneslibfont.png
 
 bitmaps : pvsneslibfont.pic
 
-$(NIMOUT): $(NIMSRC)
+$(NIMOUT): $(NIMSRC_PATH)
 	@echo Compiling Nim ... $<
 	$(NIM) c -d:release --nimcache:$(NIMCACHE) --header:$(NIMHEADER) $<
 	@FILES=$$(rg -l "NIM_INTBITS 64" "$(CURDIR)/src/nimcache" 2>/dev/null); \
