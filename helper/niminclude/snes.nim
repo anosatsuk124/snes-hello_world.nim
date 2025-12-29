@@ -2736,6 +2736,34 @@ proc spcPlaySoundV*(sndIndex: u8; volume: u16) {.cdecl, importc: "spcPlaySoundV"
 ##     \brief snes sprites functionality.
 ##
 
+const
+  ATTR2_DISABLED* = 0xe8
+
+  OBJ_SIZE8_L16* = (0 shl 5)   ## default OAM size 8x8 (SM) and 16x16 (LG) pix for OBJSEL register
+  OBJ_SIZE8_L32* = (1 shl 5)   ## default OAM size 8x8 (SM) and 32x32 (LG) pix for OBJSEL register
+  OBJ_SIZE8_L64* = (2 shl 5)   ## default OAM size 8x8 (SM) and 64x64 (LG) pix for OBJSEL register
+  OBJ_SIZE16_L32* = (3 shl 5)  ## default OAM size 16x16 (SM) and 32x32 (LG) pix for OBJSEL register
+  OBJ_SIZE16_L64* = (4 shl 5)  ## default OAM size 16x16 (SM) and 64x64 (LG) pix for OBJSEL register
+  OBJ_SIZE32_L64* = (5 shl 5)  ## default OAM size 32x32 (SM) and 64x64 (LG) pix for OBJSEL register
+
+  OBJ_SMALL* = 0
+  OBJ_LARGE* = 1
+  OBJ_SHOW* = 0
+  OBJ_HIDE* = 1
+
+  OBJ_SPRITE32* = 1  ## sprite with 32x32 identifier
+  OBJ_SPRITE16* = 2  ## sprite with 16x16 identifier
+  OBJ_SPRITE8* = 4   ## sprite with 8x8 identifier
+
+  OBJ_FLIPX* = 0x40  ## sprite flip x attribute
+  OBJ_FLIPY* = 0x80  ## sprite flip y attribute
+
+template OBJ_PAL*(palofs: untyped): untyped =
+  (palofs shl 1)  ## sprite palette attribute
+
+template OBJ_PRIO*(prio: untyped): untyped =
+  (prio shl 4)  ## sprite priority attribute
+
 type
   t_sprites* {.importc: "t_sprites", header: "snes/sprite.h", packed.} = object
     oamx*: int16
